@@ -1,54 +1,61 @@
-# PodShorts Processor
+# AI Video Shorts Generator
 
-Automatically create short, vertical video clips from a podcast video.
-
----
-
-## How it works
-
-1. Transcribes the podcast using WhisperX.
-2. Finds Q&A or story moments with Google Gemini.
-3. Cuts and processes clips into vertical videos focused on the main speaker.
-4. Saves clips in `/output_shorts/`.
+A GPU-accelerated pipeline to automatically create vertical video shorts from podcasts or long videos.
 
 ---
 
-## Example Videos
+## Description
 
-You can see sample outputs below:
+**AI Video Shorts Generator** uses Python, Modal, WhisperX, Gemini API, and Active Speaker Detection (LR-ASD, IJCV 2025) to:
+- Transcribe videos and accurately segment speech.
+- Detect active speakers and keep the vertical frame focused on them.
+- Automatically extract key moments (Q&A, stories, viral hooks) using Gemini API.
+- Generate ready-to-upload vertical video shorts.
 
-<iframe width="360" height="640" src="https://www.youtube.com/embed/-1SHfksjU1c" title="Demo Pratham Garg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+---
 
-<iframe width="360" height="640" src="https://www.youtube.com/embed/BhJaQxAMmmQ" title="Demo 2 Pratham Garg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+## Features
+
+- **Transcription:** Uses WhisperX for accurate speech-to-text.
+- **Moment Detection:** Finds questions, answers, and stories using Gemini API.
+- **Active Speaker Detection:** Keeps the shot centered on whoever is speaking (LR-ASD model).
+- **GPU-Accelerated:** Fast processing with Modal cloud GPUs.
+- **Automated End-to-End:** Input a video, get vertical shorts as output.
 
 ---
 
 ## Usage
 
-1. Place your podcast video as `input.mp4` in the project folder.
+1. Place your podcast or long video as `input.mp4` in the project directory.
 2. Run:
    ```bash
    modal run process_video_on_modal.py --video-path ./input.mp4
    ```
-3. Processed shorts will be in `/output_shorts/`.
+3. Find the generated vertical shorts in `/output_shorts/` (e.g., `1.mp4`, `2.mp4`, ...).
 
 ---
 
 ## Requirements
 
-- [Modal](https://modal.com/) account and CLI
+- Modal account and CLI (`pip install modal`)
 - Add your Gemini API key as a Modal secret named `gemini-secret`
-- Python dependencies in `requirements.txt` (handled inside the Modal container)
+- Python dependencies in `requirements.txt` (auto-installed by Modal container)
 
 ---
 
-## Output
+## Demo Output
 
-- After running, your video clips will be in `/output_shorts/` as:
-  - `1.mp4`
-  - `2.mp4`
-  - `3.mp4`
+You can watch sample output shorts here:
+- [Demo Short 1](https://www.youtube.com/watch?v=-1SHfksjU1c)
+- [Demo Short 2](https://www.youtube.com/watch?v=BhJaQxAMmmQ)
 
-You can play these files with any video player.
+---
+
+## Credits
+
+- WhisperX for transcription
+- Google Gemini API for moment extraction
+- LR-ASD (Springer IJCV 2025) for active speaker detection
+- Modal for GPU orchestration
 
 ---
