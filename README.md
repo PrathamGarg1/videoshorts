@@ -45,9 +45,14 @@ A GPU-accelerated pipeline to automatically create vertical video shorts from po
 
 ## Demo Output
 
+
 You can watch sample output shorts here:
-- [Demo Short 1](https://www.youtube.com/watch?v=-1SHfksjU1c)
-- [Demo Short 2](https://www.youtube.com/watch?v=BhJaQxAMmmQ)
+- [Demo Short 1](https://www.youtube.com/shorts/-1SHfksjU1c)
+- [Demo Short 2](https://www.youtube.com/shorts/BhJaQxAMmmQ)
+- [Demo Short 3](https://www.youtube.com/shorts/BhJaQxAMmmQ)
+
+The input video used:
+- [Input Video](https://youtu.be/P6FjXQxs7bQ)
 
 ---
 
