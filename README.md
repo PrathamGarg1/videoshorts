@@ -13,35 +13,19 @@ Automatically create short, vertical video clips from a podcast video.
 
 ---
 
-## Example Files
+## Example Videos
 
-```
-/input.mp4
-/output_shorts/
-    1.mp4
-    2.mp4
-    3.mp4
-```
-- **`input.mp4`**: Example podcast video (present in this repo).
-- **`output_shorts/1.mp4`**, **`output_shorts/2.mp4`**, **`output_shorts/3.mp4`**: Example generated vertical shorts (present in this repo).
+You can see sample outputs below:
 
----
+<iframe width="360" height="640" src="https://www.youtube.com/embed/-1SHfksjU1c" title="Demo Pratham Garg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
-## See Example Videos
-
-**Input Video:**  
-[▶️ input.mp4](input.mp4)
-
-**Generated Shorts:**  
-[▶️ 1.mp4](output_shorts/short_1_1.03-60.02.mp4)  
-[▶️ 2.mp4](output_shorts/short_2_61.73-102.56.mp4)  
-[▶️ 3.mp4](output_shorts/short_3_292.29-333.59.mp4)
+<iframe width="360" height="640" src="https://www.youtube.com/embed/BhJaQxAMmmQ" title="Demo 2 Pratham Garg" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ---
 
 ## Usage
 
-1. Place your podcast video at `input.mp4` in the project folder.
+1. Place your podcast video as `input.mp4` in the project folder.
 2. Run:
    ```bash
    modal run process_video_on_modal.py --video-path ./input.mp4
