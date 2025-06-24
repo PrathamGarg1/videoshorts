@@ -22,7 +22,24 @@ A GPU-accelerated pipeline to automatically create vertical video shorts from po
 - **GPU-Accelerated:** Fast processing with Modal cloud GPUs.
 - **Automated End-to-End:** Input a video, get vertical shorts as output.
 
+
 ---
+
+## Demo Output
+
+
+You can watch sample output shorts here:
+- [Demo Short 1](https://www.youtube.com/shorts/-1SHfksjU1c)
+- [Demo Short 2](https://www.youtube.com/shorts/BhJaQxAMmmQ)
+- [Demo Short 3](https://www.youtube.com/shorts/BhJaQxAMmmQ)
+
+The input video used:
+- [Input Video](https://youtu.be/P6FjXQxs7bQ)
+
+---
+
+---
+
 
 ## Usage
 
@@ -41,20 +58,6 @@ A GPU-accelerated pipeline to automatically create vertical video shorts from po
 - Add your Gemini API key as a Modal secret named `gemini-secret`
 - Python dependencies in `requirements.txt` (auto-installed by Modal container)
 
----
-
-## Demo Output
-
-
-You can watch sample output shorts here:
-- [Demo Short 1](https://www.youtube.com/shorts/-1SHfksjU1c)
-- [Demo Short 2](https://www.youtube.com/shorts/BhJaQxAMmmQ)
-- [Demo Short 3](https://www.youtube.com/shorts/BhJaQxAMmmQ)
-
-The input video used:
-- [Input Video](https://youtu.be/P6FjXQxs7bQ)
-
----
 
 ## Credits
 
