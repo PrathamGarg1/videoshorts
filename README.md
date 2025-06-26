@@ -25,18 +25,20 @@ A GPU-accelerated pipeline to automatically create vertical video shorts from po
 
 ---
 
-## Demo Output
+## Demo Output 
 
 
-You can watch sample output shorts here:
-- [Demo Short 1](https://www.youtube.com/shorts/BhJaQxAMmmQ)
-- [Demo Short 2](https://www.youtube.com/shorts/-1SHfksjU1c)
-- [Demo Short 3](https://www.youtube.com/shorts/BhJaQxAMmmQ)
+You can watch sample output shorts here: 
+- [Demo Short 1](https://www.youtube.com/shorts/QfNeYsNulfM)
+- [Demo Short 2](https://www.youtube.com/shorts/BhJaQxAMmmQ)
+- [Demo Short 3](https://www.youtube.com/shorts/-1SHfksjU1c)
 
 The input video used:
 - [Input Video](https://youtu.be/P6FjXQxs7bQ)
 
 ---
+## Benchmarks 
+(More than 64.2% retention rate of a 42 sec video thus proving its greater viral nature)
 
 ---
 
