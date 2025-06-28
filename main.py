@@ -1,5 +1,3 @@
-# process_video_on_modal.py
-
 import glob
 import json
 import os
