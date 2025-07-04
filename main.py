@@ -9,9 +9,6 @@ import uuid
 
 import modal
 
-# --- 1. Define the Modal Environment ---
-# This section defines the container image where our code will run.
-# It includes Python libraries and the necessary 'lrasd' directory.
 image = (modal.Image.from_registry("nvidia/cuda:12.4.0-devel-ubuntu22.04",add_python="3.12")
          .apt_install(["ffmpeg","libgl1-mesa-glx","wget","libcudnn8","libcudnn8-dev"])
          .pip_install_from_requirements("requirements.txt")
@@ -19,19 +16,12 @@ image = (modal.Image.from_registry("nvidia/cuda:12.4.0-devel-ubuntu22.04",add_py
          )
 app = modal.App("podshorts-processor", image=image)
 
-# --- 2. Define Persistent Volumes ---
-# A 'Volume' is like a network hard drive.
-# - model_volume caches the AI models to avoid re-downloading them on every run.
-# - output_volume stores the generated video clips before they are saved locally.
 model_volume = modal.Volume.from_name("podshorts-model-cache", create_if_missing=True)
 output_volume = modal.Volume.from_name("podshorts-output", create_if_missing=True)
 
 MODEL_CACHE_PATH = "/root/.cache/torch"
 OUTPUT_DIR_PATH = "/output"
 
-
-# --- 3. Core Logic (Helper Functions) ---
-# These functions are copied from your original script and will run inside the Modal container.
 
 def create_vertical_shorts(tracks, scores, pyframes_path, pyavi_path, audio_path, vertical_vid_path):
     import cv2
@@ -123,7 +113,6 @@ def process_clip(base_tmp_dir, original_video_path, start_time, end_time, short_
 
     shutil.copy(short_segment_path, base_tmp_dir / f"{short_name}.mp4")
 
-    # Run Active Speaker Detection. Note the corrected 'cwd' path.
     lrasd_command = f"python Columbia_test.py --videoName {short_name} --videoFolder {str(base_tmp_dir)} --pretrainModel weight/finetuning_TalkSet.model"
     subprocess.run(lrasd_command, cwd="/asd", shell=True, check=True, capture_output=True, text=True)
 
@@ -139,15 +128,12 @@ def process_clip(base_tmp_dir, original_video_path, start_time, end_time, short_
 
     create_vertical_shorts(tracks, scores, str(pyframes_path), str(pyavi_path), str(audio_path), str(vertical_vid_path))
     
-    # Return the path of the final generated clip inside the container
     return vertical_vid_path
 
 
-# --- 4. The Remote GPU-accelerated Class ---
-# This class contains the main logic that will run on a Modal GPU.
 @app.cls(
-    gpu="L40S",  # Specify GPU type. "T4" is a cheaper alternative.
-    timeout=1800, # 30-minute timeout for the whole process.
+    gpu="L40S", 
+    timeout=1800, 
     secrets=[modal.Secret.from_name("gemini-secret")],
     volumes={MODEL_CACHE_PATH: model_volume, OUTPUT_DIR_PATH: output_volume},
 )
@@ -258,7 +244,6 @@ The transcript is as follows:\n\n""" + transcript_json
 
         print(f"Found {len(moments)} potential clips to generate.")
 
-        # 3. Process each clip and save to output volume
         clip_filenames = []
         for idx, moment in enumerate(moments):
             if "start" in moment and "end" in moment:
@@ -280,7 +265,6 @@ The transcript is as follows:\n\n""" + transcript_json
         shutil.rmtree(base_dir)
         return clip_filenames
 
-# --- 5. The Local Entrypoint ---
 @app.local_entrypoint()
 def main(video_path: str = "./input.mp4"):
     if not os.path.exists(video_path):
