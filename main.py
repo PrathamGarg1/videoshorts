@@ -197,7 +197,7 @@ The transcript is as follows:\n\n""" + transcript_json
     @modal.method()
     def process_video(self, video_bytes: bytes):
         """The main remote method that receives the video and processes it."""
-        print(f"Received video ({len(video_bytes) / 1e6:.2f} MB). Starting pipeline...")
+        print(f"Received video. Starting pipeline...")
         base_dir = pathlib.Path("/tmp") / str(uuid.uuid4())
         base_dir.mkdir()
         
