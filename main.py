@@ -144,7 +144,7 @@ class VideoProcessor:
         import whisperx
         from google import genai
         
-        print("Loading AI models onto GPU...")
+        print("Loading AI models ...")
         self.device = "cuda"
         self.compute_type = "float16"
 
@@ -237,7 +237,7 @@ The transcript is as follows:\n\n""" + transcript_json
             print("😀😀")
 
         except json.JSONDecodeError:
-            print("Error: Could not parse moments from Gemini response.")
+            print("Error: Could not parse ")
             moments = []
 
 
@@ -247,19 +247,19 @@ The transcript is as follows:\n\n""" + transcript_json
         clip_filenames = []
         for idx, moment in enumerate(moments):
             if "start" in moment and "end" in moment:
-                print(f"\n--- Processing clip {idx + 1}/{len(moments)} (Start: {moment['start']}s, End: {moment['end']}s) ---")
+                print(f"\n--- Processing clip {idx + 1}")
                 try:
                     final_clip_path = process_clip(base_dir, video_path_in_container, moment["start"], moment["end"], idx)
                     
-                    output_filename = f"short_{idx+1}_{moment['start']:.2f}-{moment['end']:.2f}.mp4"
+                    output_filename = f"short_{idx+1}.mp4"
                     destination_path = pathlib.Path(OUTPUT_DIR_PATH) / output_filename
                     
                     shutil.copy(final_clip_path, destination_path)
                     
                     clip_filenames.append(output_filename)
-                    print(f"Successfully processed and saved clip to volume: {destination_path}")
+                    print(f"Successfully saved clip to volume: {destination_path}")
                 except Exception as e:
-                    print(f"Failed to process clip {idx+1}. Error: {e}")
+                    print(f"Failed to process clip. Error: {e}")
 
         output_volume.commit()
         shutil.rmtree(base_dir)
@@ -268,33 +268,30 @@ The transcript is as follows:\n\n""" + transcript_json
 @app.local_entrypoint()
 def main(video_path: str = "./input.mp4"):
     if not os.path.exists(video_path):
-        print(f"Error: Video file not found at '{video_path}'.")
-        print("Please provide the correct path using --video-path /path/to/your/video.mp4")
+        print(" Video  not found  ")
         return
 
     print(f"Reading video file from: {video_path}")
     video_bytes = pathlib.Path(video_path).read_bytes()
 
-    print("Uploading video and starting remote processing on Modal GPU...")
+    print("Uploading video and starting processing...")
     processor = VideoProcessor()
     processed_filenames = processor.process_video.remote(video_bytes)
 
     if not processed_filenames:
-        print("\nProcessing complete. No clips were generated.")
+        print("\ No clips were generated.")
         return
 
-    # Create local output directory
     local_output_dir = pathlib.Path("./output_shorts")
     local_output_dir.mkdir(exist_ok=True)
     
-    print(f"\nProcessing complete. Downloading {len(processed_filenames)} clips to '{local_output_dir.resolve()}'...")
+    print(f"\Downloading clips  ..")
 
-    # Download each processed clip from the output volume
     for filename in processed_filenames:
         data = b"".join(output_volume.read_file(filename))
         local_path = local_output_dir / filename
         local_path.write_bytes(data)
-        print(f"-> Saved {local_path}")
+        print(f" Saved {local_path}")
         
-    print("\nAll clips saved successfully.")
+    print("\n Made with your blessings")
 
