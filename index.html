@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Shorts</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0a0a0f;
+      color: #e8e8ed;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+    }
+    h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .sub { color: #888; font-size: 0.95rem; margin-bottom: 2rem; }
+    #dropzone {
+      width: 100%;
+      max-width: 520px;
+      border: 2px dashed #333;
+      border-radius: 16px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #12121a;
+    }
+    #dropzone:hover, #dropzone.dragover {
+      border-color: #6366f1;
+      background: #16162a;
+    }
+    #dropzone svg { margin-bottom: 1rem; opacity: 0.6; }
+    #dropzone p { color: #aaa; font-size: 0.9rem; }
+    #dropzone .hint { color: #555; font-size: 0.8rem; margin-top: 0.5rem; }
+    input[type="file"] { display: none; }
+    #status {
+      margin-top: 1.5rem;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      min-height: 1.5rem;
+      font-size: 0.9rem;
+      color: #888;
+    }
+    #status.processing { color: #a5b4fc; }
+    #status.error { color: #f87171; }
+    #status.done { color: #4ade80; }
+    #jobLink {
+      margin-top: 0.75rem;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #666;
+      word-break: break-all;
+      display: none;
+    }
+    #jobLink a { color: #818cf8; }
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid #333;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #clips {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.25rem;
+      max-width: 900px;
+      width: 100%;
+      margin-top: 2rem;
+    }
+    .clip-card {
+      background: #12121a;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #222;
+    }
+    .clip-card video { width: 100%; display: block; background: #000; }
+    .clip-card footer {
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: #888;
+    }
+    .clip-card a {
+      color: #6366f1;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .clip-card a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h1>Video Shorts</h1>
+  <p class="sub">Drop a podcast or long video — get vertical clips</p>
+
+  <div id="dropzone">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.5">
+      <path d="M12 16V4m0 0l-4 4m4-4l4 4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+    </svg>
+    <p>Drag & drop your video here</p>
+    <p class="hint">or click to browse · MP4, MOV, WebM</p>
+  </div>
+  <input type="file" id="fileInput" accept="video/*" />
+
+  <div id="status"></div>
+  <div id="jobLink"></div>
+  <div id="clips"></div>
+
+  <script>
+    const STORAGE_KEY = "videoshorts_job_id";
+    const POLL_MS = 5000;
+
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const status = document.getElementById("status");
+    const jobLinkEl = document.getElementById("jobLink");
+    const clipsEl = document.getElementById("clips");
+
+    let pollTimer = null;
+
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("dragover"); });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("dragover"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (e.dataTransfer.files[0]) startUpload(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files[0]) startUpload(fileInput.files[0]);
+    });
+
+    function setStatus(msg, cls) {
+      status.className = cls || "";
+      status.innerHTML = msg;
+    }
+
+    function setBusy(busy) {
+      dropzone.style.pointerEvents = busy ? "none" : "";
+      dropzone.style.opacity = busy ? "0.5" : "";
+    }
+
+    function jobUrl(jobId) {
+      return `${location.origin}${location.pathname}#job=${jobId}`;
+    }
+
+    function showJobLink(jobId) {
+      const url = jobUrl(jobId);
+      jobLinkEl.style.display = "block";
+      jobLinkEl.innerHTML = `Job <strong>${jobId}</strong> · <a href="${url}">${url}</a><br>You can close this tab — reopen this link when ready.`;
+    }
+
+    function hideJobLink() {
+      jobLinkEl.style.display = "none";
+      jobLinkEl.innerHTML = "";
+    }
+
+    function renderClips(clips) {
+      clipsEl.innerHTML = "";
+      (clips || []).forEach((clip, i) => {
+        const name = typeof clip === "string" ? clip : clip.name;
+        const url = typeof clip === "string" ? `/clips/${clip}` : (clip.url || `/clips/${clip.name}`);
+
+        const card = document.createElement("div");
+        card.className = "clip-card";
+
+        const video = document.createElement("video");
+        video.src = url;
+        video.controls = true;
+        video.playsInline = true;
+
+        const footer = document.createElement("footer");
+        const label = document.createElement("span");
+        label.textContent = `Clip ${i + 1}`;
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = name;
+        link.textContent = "Download";
+
+        footer.append(label, link);
+        card.append(video, footer);
+        clipsEl.appendChild(card);
+      });
+    }
+
+    async function requestNotifyPermission() {
+      if (!("Notification" in window)) return;
+      if (Notification.permission === "default") {
+        try { await Notification.requestPermission(); } catch (_) {}
+      }
+    }
+
+    function notifyDone(jobId, count) {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      try {
+        new Notification("Video Shorts ready", {
+          body: `${count} clip${count === 1 ? "" : "s"} ready for job ${jobId}`,
+        });
+      } catch (_) {}
+    }
+
+    function stopPolling() {
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    async function pollJob(jobId) {
+      stopPolling();
+      localStorage.setItem(STORAGE_KEY, jobId);
+      history.replaceState(null, "", `#job=${jobId}`);
+      showJobLink(jobId);
+      setBusy(true);
+
+      const tick = async () => {
+        try {
+          const res = await fetch(`/jobs/${jobId}`);
+          if (res.status === 404) {
+            setStatus("Job not found. Upload a new video.", "error");
+            localStorage.removeItem(STORAGE_KEY);
+            setBusy(false);
+            hideJobLink();
+            return;
+          }
+          if (!res.ok) throw new Error("Could not fetch job status");
+
+          const data = await res.json();
+          const st = data.status;
+
+          if (st === "queued" || st === "processing") {
+            setStatus(
+              `<span class="spinner"></span> ${data.message || "Processing…"}`,
+              "processing"
+            );
+            if (data.clips?.length) renderClips(data.clips);
+            pollTimer = setTimeout(tick, POLL_MS);
+            return;
+          }
+
+          if (st === "done") {
+            const count = data.count || data.clips?.length || 0;
+            setStatus(
+              `Done — ${count} clip${count === 1 ? "" : "s"} ready · job ${jobId}`,
+              "done"
+            );
+            renderClips(data.clips || []);
+            notifyDone(jobId, count);
+            localStorage.removeItem(STORAGE_KEY);
+            setBusy(false);
+            return;
+          }
+
+          if (st === "error") {
+            setStatus(data.error || data.message || "Processing failed", "error");
+            localStorage.removeItem(STORAGE_KEY);
+            setBusy(false);
+            return;
+          }
+
+          setStatus(`Unknown status: ${st}`, "error");
+          pollTimer = setTimeout(tick, POLL_MS);
+        } catch (err) {
+          setStatus(`Waiting… ${(err && err.message) || "retrying"}`, "processing");
+          pollTimer = setTimeout(tick, POLL_MS);
+        }
+      };
+
+      await tick();
+    }
+
+    async function startUpload(file) {
+      stopPolling();
+      clipsEl.innerHTML = "";
+      hideJobLink();
+      setStatus('<span class="spinner"></span> Uploading…', "processing");
+      setBusy(true);
+      await requestNotifyPermission();
+
+      const form = new FormData();
+      form.append("file", file);
+
+      try {
+        const res = await fetch("/process", { method: "POST", body: form });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok && res.status !== 202) {
+          throw new Error(data.detail || "Upload failed");
+        }
+        if (!data.job_id) throw new Error("No job id returned");
+
+        setStatus('<span class="spinner"></span> Queued — processing on GPU…', "processing");
+        await pollJob(data.job_id);
+      } catch (err) {
+        setStatus(err.message || "Something went wrong", "error");
+        setBusy(false);
+      } finally {
+        fileInput.value = "";
+      }
+    }
+
+    function getJobFromHash() {
+      const m = location.hash.match(/job=([a-zA-Z0-9_-]+)/);
+      return m ? m[1] : null;
+    }
+
+    // Resume on load: URL hash wins, then localStorage
+    (function resume() {
+      const fromHash = getJobFromHash();
+      const fromStore = localStorage.getItem(STORAGE_KEY);
+      const jobId = fromHash || fromStore;
+      if (jobId) {
+        setStatus('<span class="spinner"></span> Resuming job…', "processing");
+        pollJob(jobId);
+      }
+    })();
+
+    window.addEventListener("hashchange", () => {
+      const jobId = getJobFromHash();
+      if (jobId) pollJob(jobId);
+    });
+  </script>
+</body>
+</html>
