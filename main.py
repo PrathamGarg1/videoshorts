@@ -41,6 +41,7 @@ web_image = (
     modal.Image.debian_slim(python_version="3.12")
     .pip_install("fastapi[standard]")
     .add_local_file("index.html", "/root/index.html")
+    .add_local_file("script.js", "/root/script.js")
 )
 
 model_volume = modal.Volume.from_name("podshorts-model-cache", create_if_missing=True)
@@ -289,17 +290,50 @@ Never include:
 If there are no valid clips to extract, the output should be an empty list [], in JSON format.
 The transcript is as follows:\n\n""" + transcript_json
         
-        log.info(f"Calling Gemini ({GEMINI_MODEL}) to identify clip moments...")
+        models = []
+        for name in ("gemini-3.5-flash-lite", "gemini-3.8-flash", GEMINI_MODEL):
+            if name not in models:
+                models.append(name)
+
+        from google.genai import types
+        request_config = types.GenerateContentConfig(
+            http_options=types.HttpOptions(timeout=45_000),
+        )
+
         t0 = time.time()
-        try:
-            response = self.gemini_client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
-            log.info(f"Gemini responded in {time.time() - t0:.1f}s")
-            log.info(f"Gemini raw response (first 500 chars): {response.text[:500]}")
-            return response.text
-        except Exception as e:
-            log.error(f"Gemini API error: {e}")
-            log.error(traceback.format_exc())
-            raise
+        last_error = None
+        unavailable = set()
+        for round_i in range(2):
+            for model_name in models:
+                if model_name in unavailable:
+                    continue
+                log.info(f"Calling Gemini ({model_name}) to identify clip moments...")
+                try:
+                    response = self.gemini_client.models.generate_content(
+                        model=model_name, contents=prompt, config=request_config,
+                    )
+                    log.info(f"Gemini responded in {time.time() - t0:.1f}s via {model_name}")
+                    log.info(f"Gemini raw response (first 500 chars): {response.text[:500]}")
+                    return response.text
+                except Exception as e:
+                    last_error = e
+                    message = str(e)
+                    status = getattr(e, "status_code", None)
+                    gone = status == 404 or "NOT_FOUND" in message or "no longer available" in message
+                    retryable = gone or status in (429, 500, 503) or any(
+                        token in message for token in ("UNAVAILABLE", "RESOURCE_EXHAUSTED", "high demand")
+                    )
+                    if gone:
+                        unavailable.add(model_name)
+                    log.warning(f"Gemini {model_name} failed ({status}): {e}")
+                    if not retryable:
+                        log.error(traceback.format_exc())
+                        raise
+            if round_i == 0 and any(name not in unavailable for name in models):
+                log.warning("Gemini models busy — retrying in 8s")
+                time.sleep(8)
+        log.error(f"Gemini API error: {last_error}")
+        raise last_error
 
     @modal.method()
     def process_video(self, video_bytes: bytes, job_id: str = None):
@@ -421,6 +455,10 @@ def web():
     async def serve_ui():
         web_log.info("Serving UI")
         return FileResponse("/root/index.html")
+
+    @web_app.get("/script.js")
+    async def serve_script():
+        return FileResponse("/root/script.js", media_type="text/javascript")
 
     @web_app.post("/process")
     async def process_upload(file: UploadFile = File(...)):
